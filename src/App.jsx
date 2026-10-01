@@ -1,21 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
 import { ChevronDown, Menu, MoveRight, X } from 'lucide-react'
 
 const art = {
   chrome: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?auto=format&fit=crop&w=1800&q=88',
+  banner: './banner.png',
   form: 'https://images.unsplash.com/photo-1635776062043-223faf322554?auto=format&fit=crop&w=1600&q=88',
   glass: 'https://images.unsplash.com/photo-1618172193622-ae2d025f4032?auto=format&fit=crop&w=1500&q=88',
   fluid: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?auto=format&fit=crop&w=1500&q=88',
+  experiment1: './cycle.png',
+  experiment2: './headphones.png',
+  partnerLogo: '/landing-logo-v2-54d421b5.png',
   orange: 'https://images.unsplash.com/photo-1633167606207-d840b5070fc2?auto=format&fit=crop&w=1500&q=88',
 }
 
 const stats = [
   ['2018', 'Founded'],
-  ['200+', 'Projects shipped'],
+  ['20+', 'Projects shipped'],
   ['16', 'Team members'],
-  ['10+', 'Industries served'],
+  ['5+', 'Industries served'],
 ]
 
 const faqs = [
@@ -25,7 +29,18 @@ const faqs = [
   ['Do you offer training as well as production?', 'Yes. Visual3D Academy is our learning platform for artists and teams who want to build practical, production-ready Blender skills.'],
 ]
 
-const tools = ['Blender', 'Cinema 4D', 'Unreal Engine', 'Maya', 'Houdini', 'Substance', 'After Effects', 'Octane', 'Redshift', 'DaVinci']
+const tools = [
+  { name: 'Blender', logo: '/tools/blender.svg' },
+  { name: 'Cinema 4D', logo: '/tools/cinema4d.svg', mono: true },
+  { name: 'Unreal Engine', logo: '/tools/unrealengine.svg', mono: true },
+  { name: 'Maya', logo: '/tools/autodeskmaya.svg' },
+  { name: 'Houdini', logo: '/tools/houdini.svg' },
+  { name: 'Substance', logo: '/tools/substance.svg' },
+  { name: 'After Effects', logo: '/tools/aftereffects.svg' },
+  { name: 'Octane', logo: '/tools/octanerender.svg', mono: true },
+  { name: 'Redshift', logo: '/tools/redshift.svg' },
+  { name: 'DaVinci', logo: '/tools/davinciresolve.svg', mono: true },
+]
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -51,7 +66,7 @@ function Cursor() {
     const over = (e) => {
       const next = e.target.closest('[data-cursor="view"]') ? 'view'
         : e.target.closest('a, button, input, textarea, select') ? 'link'
-        : 'default'
+          : 'default'
       setVariant((current) => (current === next ? current : next))
     }
     window.addEventListener('mousemove', move, { passive: true })
@@ -117,6 +132,23 @@ function ClientStrip() {
   )
 }
 
+function Partner() {
+  const logoMask = { WebkitMaskImage: `url(${art.partnerLogo})`, maskImage: `url(${art.partnerLogo})` }
+  return (
+    <section className="partner">
+      <Reveal className="partner-inner">
+        <Eyebrow>Official partner of</Eyebrow>
+        <div className="partner-stage">
+          <img className="partner-logo" src={art.partnerLogo} alt="Visual3D Academy" />
+          <div className="partner-shine" style={logoMask} aria-hidden="true" />
+          <img className="partner-reflection" src={art.partnerLogo} alt="" aria-hidden="true" />
+        </div>
+        <p>The studio behind Visual3D Academy, a Blender learning platform built by the same artists who craft our client work.</p>
+      </Reveal>
+    </section>
+  )
+}
+
 function Stats() {
   return (
     <section className="stats">
@@ -138,7 +170,13 @@ function Tools() {
         <p>Our artists move fluently across the tools your pipeline already relies on.</p>
       </Reveal>
       <div className="tool-grid">
-        {tools.map((tool, i) => <Reveal className="tool" delay={(i % 5) * .05} key={tool}><span>{String(i + 1).padStart(2, '0')}</span>{tool}</Reveal>)}
+        {tools.map((tool, i) => (
+          <Reveal className="tool" delay={(i % 5) * .05} key={tool.name}>
+            <span>{String(i + 1).padStart(2, '0')}</span>
+            <img className={tool.mono ? 'tool-logo mono' : 'tool-logo'} src={tool.logo} alt="" />
+            {tool.name}
+          </Reveal>
+        ))}
       </div>
     </section>
   )
@@ -194,11 +232,47 @@ function Footer() {
   )
 }
 
+function ProjectVisual({ project }) {
+  const frame = useRef(null)
+  const [loadVideo, setLoadVideo] = useState(false)
+  const [playing, setPlaying] = useState(false)
+
+  useEffect(() => {
+    if (!project.video || !frame.current) return undefined
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      setLoadVideo(true)
+      observer.disconnect()
+    }, { rootMargin: '240px' })
+    observer.observe(frame.current)
+    return () => observer.disconnect()
+  }, [project.video])
+
+  return (
+    <div className={`project-image${playing ? ' is-playing' : ''}`} data-cursor="view" ref={frame}>
+      <img src={project.image} alt={`${project.title} artwork`} />
+      {project.video && loadVideo && (
+        <video
+          src={project.video}
+          poster={project.image}
+          muted
+          loop
+          playsInline
+          autoPlay
+          preload="none"
+          disablePictureInPicture
+          onPlaying={() => setPlaying(true)}
+        />
+      )}
+    </div>
+  )
+}
+
 function Home() {
   const projects = [
-    { title: 'Kinetic Bloom', type: 'Art direction · CGI', image: art.chrome, className: 'wide' },
-    { title: 'Liquid Matter', type: 'Motion · Simulation', image: art.fluid },
-    { title: 'Soft Geometry', type: 'Product · 3D', image: art.glass },
+    { title: 'Motion Simulation', type: 'Art direction · CGI', image: art.chrome, video: './web_promo.mp4', className: 'wide' },
+    { title: '3D Modeling', type: 'Motion · Simulation', image: art.experiment1 },
+    { title: 'Product renders', type: 'Product · 3D', image: art.experiment2 },
   ]
   return (
     <main>
@@ -214,12 +288,13 @@ function Home() {
           </Reveal>
         </div>
         <motion.div className="hero-art" initial={{ scale: .92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1.2 }}>
-          <img src={art.chrome} alt="Abstract iridescent 3D form" />
+          <img src={art.banner} alt="Abstract iridescent 3D form" />
           <span className="art-label">Selected work / 2026</span>
           <div className="orbit">SU</div>
         </motion.div>
       </section>
       <ClientStrip />
+      <Partner />
 
       <section className="section intro">
         <Reveal><Eyebrow>What we do</Eyebrow></Reveal>
@@ -234,7 +309,7 @@ function Home() {
         <div className="project-grid">
           {projects.map((project, i) => (
             <Reveal className={`project ${project.className || ''}`} delay={i * .08} key={project.title}>
-              <div className="project-image" data-cursor="view"><img src={project.image} alt={`${project.title} abstract 3D artwork`} /></div>
+              <ProjectVisual project={project} />
               <div className="project-meta"><h3>{project.title}</h3><p>{project.type}</p></div>
             </Reveal>
           ))}
@@ -314,7 +389,7 @@ function Contact() {
             <label>Tell us about your project<textarea required rows="6" placeholder="What are you hoping to create?" /></label>
             <button className="submit" type="submit">Send your message <MoveRight /></button>
           </form> :
-          <motion.div className="success" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}><span>✓</span><h2>Message received.</h2><p>Thanks for reaching out. We will get back to you shortly.</p><button onClick={() => setSent(false)}>Send another message</button></motion.div>}
+            <motion.div className="success" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}><span>✓</span><h2>Message received.</h2><p>Thanks for reaching out. We will get back to you shortly.</p><button onClick={() => setSent(false)}>Send another message</button></motion.div>}
         </Reveal>
       </section>
       <Stats />
